@@ -3,6 +3,7 @@ from telebot.types import Message, BotCommand
 import os
 from dotenv import load_dotenv
 from src.parser.zelart_parser import PrestaShopScraper
+from src.database.mongodb import Database
 
 class ExceptionHandler(telebot.ExceptionHandler):
     def handle(self, exception):
@@ -13,6 +14,8 @@ class Bot(telebot.TeleBot):
         load_dotenv()
         BOT_TOKEN = os.getenv("BOT_TOKEN")
         super().__init__(BOT_TOKEN)
+
+        self.db = Database()
 
         self.setup_command_menu()
         self.setup_command_handlers()
@@ -46,5 +49,7 @@ class Bot(telebot.TeleBot):
         link = message.text
         parser = PrestaShopScraper()
         product = parser.scrape_product(link)
+
+        self.db.insert_product(product)
 
         self.send_message(message.from_user.id, f"Parsing the link: {link}\nTitle: {product["title"]}\nPrice: {product["priceCur"]}\nPrice with disount: {product["priceWithDiscount"]}\nWholesale price: {product["priceBigOpt"]}\nWholesale quantity: {product["bigOptQuantity"]}\nRecommended retail price: {product["priceSrp"]}\nIn stock?: {product["isHidden"]}\nURL: {product["url"]}")

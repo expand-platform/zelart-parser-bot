@@ -1,10 +1,14 @@
 import pymongo
+import os
+from dotenv import load_dotenv
 
 class Database():
     def __init__(self):
-        self.client = pymongo.MongoClient("mongodb+srv://Kavun_:Dinamit2@zelart-parser.uqwx1o2.mongodb.net/")
+        load_dotenv()
+        self.client = pymongo.MongoClient(os.getenv("MONGODB"))
         self.db = self.client["zelart-parser"]
         self.collection = self.db["products"]
+
 
     def insert_product(self, product):
         try:

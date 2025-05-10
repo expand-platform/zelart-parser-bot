@@ -22,12 +22,27 @@ class Database():
         except Exception as e:
             print(f"An error occurred: {e}")
         
+    def find_every_product(self):
+        try:
+            products = self.collection.find()
+            # print("Products found in the database")
+            # for product in products:
+            #     print(product)
+            return products
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
 
-    def find(self):
-        pass
+    def find(self, key, value):
+        self.collection.find_one({key: value})
+        
 
-    def update(self):
-        pass
+    def update(self, key, value, field_name, new_value):
+        try:
+            self.collection.update_one({key: value}, {"$set": {field_name: new_value}})
+            print(f"Updated {field_name} to {new_value} for {key}: {value}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def delete(self):
         pass

@@ -1,24 +1,20 @@
-[project]
+[tool.poetry]
 name = "zelart-parser-bot"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "kavun"}
-]
+authors = ["kavun"]
 readme = "README.md"
-requires-python = ">=3.10,<3.12"
-dependencies = [
-    "pytelegrambotapi (>=4.27.0,<5.0.0)",
-    "dotenv (>=0.9.9,<0.10.0)",
-    "bs4 (>=0.0.2,<0.0.3)",
-    "fastapi (>=0.115.12,<0.116.0)",
-    "pymongo (>=4.12.1,<5.0.0)",
-    "apscheduler (>=3.11.0,<4.0.0)",
-    "asyncio (>=3.4.3,<4.0.0)"
-]
-virtualenvs.create = false
 
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+pytelegrambotapi = ">=4.27.0,<5.0.0"
+dotenv = ">=0.9.9,<0.10.0"
+bs4 = ">=0.0.2,<0.0.3"
+fastapi = ">=0.115.12,<0.116.0"
+pymongo = ">=4.12.1,<5.0.0"
+apscheduler = ">=3.11.0,<4.0.0"
+asyncio = ">=3.4.3,<4.0.0"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

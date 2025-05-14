@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["poetry"]
+
+[phases.install]
+cmd = "poetry install --no-dev --no-interaction"
+
+[start]
+cmd = "poetry run python main.py"

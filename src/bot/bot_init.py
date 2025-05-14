@@ -4,6 +4,5 @@ from contextlib import asynccontextmanager
 
 
 def start_bot():
-    print("Bot is running...")
     bot = Bot()
     bot.polling()

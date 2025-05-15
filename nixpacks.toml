@@ -1,8 +1,0 @@
-[build]
-builder = "nixpacks"
-
-[phases.setup]
-nixPkgs = ["python311", "poetry"]
-
-[start]
-cmd = "poetry run python main.py"

@@ -2,7 +2,7 @@
 name = "zelart-parser-bot"
 version = "0.1.0"
 description = ""
-authors = ["kavun <you@example.com>"]
+authors = ["kavun <ovrashkod@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]

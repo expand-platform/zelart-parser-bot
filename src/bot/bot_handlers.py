@@ -12,10 +12,11 @@ class ExceptionHandler(telebot.ExceptionHandler):
 
 class Bot(telebot.TeleBot):
     def __init__(self):
-        load_dotenv()
-        config = dotenv_values(".env")
-        
-        BOT_TOKEN = config["BOT_TOKEN"]
+        # load_dotenv()
+        # config = dotenv_values(".env")
+    
+        # BOT_TOKEN = config["BOT_TOKEN"]
+        BOT_TOKEN = os.environ["BOT_TOKEN"]
         super().__init__(BOT_TOKEN)
 
         self.db = Database()

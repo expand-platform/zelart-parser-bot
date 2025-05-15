@@ -4,9 +4,10 @@ from dotenv import load_dotenv, dotenv_values
 
 class Database():
     def __init__(self):
-        load_dotenv()
-        config = dotenv_values(".env")
-        self.client = pymongo.MongoClient(config["MONGODB"])
+        # load_dotenv()
+        # config = dotenv_values(".env")
+        # self.client = pymongo.MongoClient(config["MONGODB"])
+        self.client = pymongo.MongoClient(os.environ["MONGODB"])
         self.db = self.client["zelart-parser"]
         self.products_collection = self.db["products"]
         self.users_collection = self.db["users"]

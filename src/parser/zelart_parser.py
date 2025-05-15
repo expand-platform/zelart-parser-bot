@@ -7,9 +7,11 @@ import urllib3
 
 class PrestaShopScraper:
     def __init__(self):
-        load_dotenv()
-        self.email = os.getenv("LOGIN")
-        self.password = os.getenv("PASSWORD")
+        # load_dotenv()
+        # self.email = os.getenv("LOGIN")
+        # self.password = os.getenv("PASSWORD")
+        self.email = os.environ["LOGIN"]
+        self.password = os.environ["PASSWORD"]
 
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 

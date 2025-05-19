@@ -119,6 +119,10 @@ class Database():
         else:
             parse_time = document[config_document.parse_time]
             print("🐍 parse_time: ",parse_time)
+
+            for time in parse_time:
+                if time is None:
+                    parse_time = [19, 0]
             
         return parse_time
         

@@ -110,7 +110,7 @@ class Bot(telebot.TeleBot):
         elif product["isHidden"] == False:
             stock = "Є в наявності"
 
-
+        #! Дальше идёт тупо дублирование кода, его можно оптимизировать
         if product["priceCur"] == product["priceWithDiscount"]:
            self.send_message(
             message.from_user.id,
@@ -144,6 +144,9 @@ class Bot(telebot.TeleBot):
             self.chat_id_for_reminder = user["chat_id"]
             if self.chat_id_for_reminder:
                 try:
+                    #! Цикл в цикле - плохо
+                    #! Если ты будешь доставать товары массивом из DB, 
+                    #! то сможешь избавиться от одного цикла 
                     products = self.db.get_products()  
                     parser = PrestaShopScraper()
                     for product_database in products:
@@ -157,6 +160,7 @@ class Bot(telebot.TeleBot):
                         
                                 print(f"product {i} has changed")
 
+                                #! Советую создать объект через dataclass для того, чтобы была подсветка и подсказки, а не просто хардкодить ключи
                                 if i == "priceCur":
                                     key = "Ціна"
                                     key_value_database = f"{product_database[i]} грн"

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["kavun <ovrashkod@gmail.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
@@ -14,6 +15,7 @@ fastapi = ">=0.115.12,<0.116.0"
 pymongo = ">=4.12.1,<5.0.0"
 apscheduler = ">=3.11.0,<4.0.0"
 requests = "^2.32.3"
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

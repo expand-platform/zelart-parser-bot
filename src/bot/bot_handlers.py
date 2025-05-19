@@ -5,10 +5,23 @@ from dotenv import load_dotenv, dotenv_values
 from src.parser.zelart_parser import PrestaShopScraper
 from src.database.mongodb import Database
 from apscheduler.schedulers.background import BackgroundScheduler
+from dataclasses import dataclass
 
+#! Это лучше вынести отдельно в ExceptionsHandler.py
 class ExceptionHandler(telebot.ExceptionHandler):
     def handle(self, exception):
         print("Exception occured: ", exception)
+
+#! Константы тоже лучше хранить отдельно
+ZELART_WEBSITE = "zelart.com.ua"
+
+#? датаклассы - это имба
+@dataclass
+class BotCommands:
+    set_time: str = "time"
+
+bot_commands = BotCommands()
+
 
 class Bot(telebot.TeleBot):
     def __init__(self):
@@ -23,8 +36,7 @@ class Bot(telebot.TeleBot):
         # self.chat_id_for_reminder = os.getenv("REMINDER_CHAT_ID")
 
         self.scheduler = BackgroundScheduler()
-        self.scheduler.add_job(self.send_daily_reminder, 'cron', hour=19, minute=0)
-        self.scheduler.start()
+        self.schedule_parse_time(19, 0)
 
         self.setup_command_menu()
         self.setup_command_handlers()
@@ -32,10 +44,14 @@ class Bot(telebot.TeleBot):
     def setup_command_menu(self):
         commands = [
             BotCommand(command="start", description="Почати роботу"),
+            BotCommand(command="time", description="Задати час парсингу"),
             BotCommand(command="parse", description="Запустити парсинг"),
             BotCommand(command="help", description="Допомога"),
         ]
         self.set_my_commands(commands)
+
+
+
 
     def setup_command_handlers(self):
         @self.message_handler(commands=['start'])
@@ -47,16 +63,24 @@ class Bot(telebot.TeleBot):
             self.db.insert_user(user)
 
             # self.send_daily_reminder()
-            self.send_message(message.from_user.id, "Привіт! Я бот для парсингу zelart.com.ua")
+            self.send_message(message.from_user.id, f"Привіт! Я бот для парсингу {ZELART_WEBSITE}")
 
         @self.message_handler(commands=['parse'])
         def send_welcome(message: Message):
-            self.send_message(message.from_user.id, "Введіть посилання на товар, який потрібно парсити")
+            self.send_message(message.from_user.id, "Введи посилання на товар iз сайту {ZELART_WEBSITE}")
             self.register_next_step_handler(message, self.process_parse_link)
+        
+        #? Команда для выставления времени
+        @self.message_handler(commands=['time'])
+        def set_time(message: Message):
+            self.send_message(message.from_user.id, "О котрiй менi краще перевiряти товари?\n\nЧас треба вводити з двукрапкою: 19:00, 20:00")
+            self.register_next_step_handler(message, self.set_time)
+
 
         @self.message_handler(commands=['help'])
         def send_help(message: Message):
             self.send_message(message.from_user.id, "Усі команди бота:\n/start - Старт\n/parse - Парсинг посилання\n/help - Список команд")
+
 
     def process_parse_link(self, message: Message):
         link = message.text
@@ -99,7 +123,8 @@ class Bot(telebot.TeleBot):
 """
             )
 
-    def send_daily_reminder(self):
+    #! Здесь очень плохой код 🤖
+    def update_products_daily(self):
         users = self.db.find_every_user()
         for user in users:
             self.chat_id_for_reminder = user["chat_id"]
@@ -159,3 +184,40 @@ class Bot(telebot.TeleBot):
                     print("Exception1:", e)
             else:
                 print("No chat id found for reminder")
+
+    
+    def schedule_parse_time(self, hour: int = 19, minutes: int = 0) -> None:
+        self.scheduler.remove_all_jobs()
+        self.scheduler.add_job(self.update_products_daily, 'cron', hour=hour, minute=minutes)
+        #? print(self.scheduler.get_jobs())
+        print(f"🟢 Products check will be started at {hour}:{minutes}")
+
+
+    #! В идеале нужно сделать, чтобы time сохранялся ещё и в БД
+    def set_time(self, message: Message) -> None:
+        """ sets check time from given message """
+        time: str = message.text
+        hour, minutes = self.convert_time(time)
+        #? print("🐍 hour / minutes: ",hour, minutes)
+
+        if hour is None or minutes is None:
+            self.send_message(message.chat.id, f"Перевiр формат вводу. Повинно бути два числа з двукрапкою: 19:00, 20:00...\n\nЗапусти команду /{bot_commands.set_time} ще раз та введи час у потрiбному форматi")
+        else: 
+            self.schedule_parse_time(hour, minutes)
+            minutes = self.format_minutes(minutes)
+
+            self.send_message(message.chat.id, f"Добре, завожу годинник на {hour}:{minutes}! Чекай апдейти по товарам ⭐")
+
+    
+    def format_minutes(self, minutes: int) -> str:
+        """Formats minutes as a 2-digit string (e.g. 0 → '00', 5 → '05')"""
+        return f"{minutes:02}"
+
+
+    def convert_time(self, time: str = "") -> list[int] | list[None]:
+        """ converts string into list of integers """
+        if ":" in time:
+            return list(map(int, time.split(":")))
+        return [None, None]            
+
+        

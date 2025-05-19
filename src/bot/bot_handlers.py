@@ -18,7 +18,12 @@ ZELART_WEBSITE = "zelart.com.ua"
 #? датаклассы - это имба
 @dataclass
 class BotCommands:
+    start: str = "start"
+    add_product: str = "add"
+    remove_product: str = "remove"
     set_time: str = "time"
+    info: str = "info"
+    help: str = "help"
 
 bot_commands = BotCommands()
 
@@ -40,18 +45,17 @@ class Bot(telebot.TeleBot):
 
     def setup_command_menu(self):
         commands = [
-            BotCommand(command="start", description="Почати роботу"),
-            BotCommand(command="time", description="Задати час парсингу"),
-            BotCommand(command="parse", description="Додати товар"),
-            BotCommand(command="help", description="Допомога"),
+            BotCommand(command=bot_commands.add_product, description="Додати товар"),
+            BotCommand(command=bot_commands.remove_product, description="Видалити товар"),
+            BotCommand(command=bot_commands.info, description="Звiт"),
+            BotCommand(command=bot_commands.set_time, description="Задати час парсингу"),
+            BotCommand(command=bot_commands.help, description="Всi команди бота"),
         ]
         self.set_my_commands(commands)
 
 
-
-
     def setup_command_handlers(self):
-        @self.message_handler(commands=['start'])
+        @self.message_handler(commands=[bot_commands.start])
         def send_welcome(message: Message):
             user = {
                 "chat_id": message.from_user.id,
@@ -59,27 +63,39 @@ class Bot(telebot.TeleBot):
             }
             self.db.insert_user(user)
 
-            # self.send_daily_reminder()
             self.send_message(message.from_user.id, f"Привіт! Я бот для парсингу {ZELART_WEBSITE}")
+            self.get_info(message)
 
-        @self.message_handler(commands=['parse'])
+        @self.message_handler(commands=[bot_commands.add_product])
         def send_welcome(message: Message):
             self.send_message(message.from_user.id, f"Введи посилання на товар iз сайту {ZELART_WEBSITE}")
             self.register_next_step_handler(message, self.process_parse_link)
         
-        #? Команда для выставления времени
-        @self.message_handler(commands=['time'])
+        #? /time
+        @self.message_handler(commands=[bot_commands.set_time])
         def set_time(message: Message):
-            hours, minutes = self.db.get_parse_time()
-            minutes = self.format_minutes(minutes)
+            parse_time = self.get_parse_time()
             
-            self.send_message(message.from_user.id, f"О котрiй менi краще перевiряти товари?\n\nЗараз це {hours}:{minutes}")
+            self.send_message(message.from_user.id, f"О котрiй менi краще перевiряти товари?\n\nЗараз це {parse_time}")
             self.register_next_step_handler(message, self.set_time)
+       
+        #? /remove
+        @self.message_handler(commands=[bot_commands.remove_product])
+        def remove_product(message: Message):
+            self.send_message(message.from_user.id, f"🔗 Вiдправ посилання на продукт, який хочеш видалити")
+            self.register_next_step_handler(message, self.remove_product)
+        
+        #? /info
+        @self.message_handler(commands=[bot_commands.info])
+        def remove_product(message: Message):
+            self.send_message(message.from_user.id, f"👷‍♂️ Звiтую про роботу")
+            self.get_info(message)
+        
+        #? /help
+        @self.message_handler(commands=[bot_commands.help])
+        def get_help(message: Message):
+            self.send_message(message.from_user.id, f"⭐ Усі команди бота\n\n/{bot_commands.start} - Старт\n/{bot_commands.add_product} - Додати товар\n/{bot_commands.remove_product} - Видалити товар\n/{bot_commands.info} - Звiт про роботу\n/{bot_commands.set_time} - Задати час парсингу")
 
-
-        @self.message_handler(commands=['help'])
-        def send_help(message: Message):
-            self.send_message(message.from_user.id, "Усі команди бота:\n/start - Старт\n/parse - Додати товар\n/time - Задати час парсингу\n/help - Список команд")
 
 
     def process_parse_link(self, message: Message):
@@ -98,26 +114,26 @@ class Bot(telebot.TeleBot):
         if product["priceCur"] == product["priceWithDiscount"]:
            self.send_message(
             message.from_user.id,
-            f"""Парсинг посилання: {link}
+            f"""➕ Тепер я слiдкую за товаром:\n{link}
 
-Назва: {product["title"]}
-Ціна оптом: {product["priceCur"]} грн
-Цількість товарів для опту: {product["bigOptQuantity"]} шт
-Рекомендована роздрібна ціна: {product["priceSrp"]} грн
-Наявність: {stock}
+- Назва: {product["title"]}
+- Ціна оптом: {product["priceCur"]} грн
+- Цількість товарів для опту: {product["bigOptQuantity"]} шт
+- Рекомендована роздрібна ціна: {product["priceSrp"]} грн
+- Наявність: {stock}
 """
             )
         elif product["priceCur"] != product["priceWithDiscount"]:
             self.send_message(
             message.from_user.id,
-            f"""Парсинг посилання: {link}
+            f"""➕ Тепер я слiдкую за товаром:\n{link}
 
-Назва: {product["title"]}
-Ціна оптом: {product["priceCur"]} грн
-Ціна зі знижкою: {product["priceWithDiscount"]} грн
-Цількість товарів для опту: {product["bigOptQuantity"]} шт
-Рекомендована роздрібна ціна: {product["priceSrp"]} грн
-Наявність: {stock}
+- Назва: {product["title"]}
+- Ціна оптом: {product["priceCur"]} грн
+- Ціна зі знижкою: {product["priceWithDiscount"]} грн
+- Цількість товарів для опту: {product["bigOptQuantity"]} шт
+- Рекомендована роздрібна ціна: {product["priceSrp"]} грн
+- Наявність: {stock}
 """
             )
 
@@ -128,7 +144,7 @@ class Bot(telebot.TeleBot):
             self.chat_id_for_reminder = user["chat_id"]
             if self.chat_id_for_reminder:
                 try:
-                    products = self.db.find_every_product()  
+                    products = self.db.get_products()  
                     parser = PrestaShopScraper()
                     for product_database in products:
                         link = product_database["url"]
@@ -190,7 +206,6 @@ class Bot(telebot.TeleBot):
         time: str = message.text
         hour, minutes = self.convert_time(time)
         #? print("🐍 hour / minutes: ",hour, minutes)
-
         self.save_time([hour, minutes])
 
         if hour is None or minutes is None:
@@ -222,6 +237,34 @@ class Bot(telebot.TeleBot):
         """ converts string into list of integers """
         if ":" in time:
             return list(map(int, time.split(":")))
-        return [None, None]            
+        return [None, None] 
 
+    
+    def get_parse_time(self) -> str:
+        hours, minutes = self.db.get_parse_time()
+        minutes = self.format_minutes(minutes)
+        return f"{hours}:{minutes}"
+    
+
+    def remove_product(self, message: Message):
+        link = message.text
+        parser = PrestaShopScraper()
+        product = parser.scrape_product(link)
+        #? print("🐍 product: ",product)
+
+        if product:
+            product_id = product["id"]
+            self.db.remove_product(product_id)
+            self.send_message(message.chat.id, f"Товар з id {product_id} бiльше не вiдслiдковується 👌")
+
+        else:
+            print(f"Can't get product info by this link: {link}")
+            self.send_message(message.chat.id, f"Я не змiг дiстати iнфу по цьому товару, вибач 😭")
+
+    def get_info(self, message: Message):
+        products_count = self.db.get_products_count()
+        parse_time = self.get_parse_time()
         
+        info_message = f"1. Зараз я слiдкую за {products_count} товарами 🔍\n2. Я надсилаю тобi апдейти у {parse_time} ⌚"
+
+        self.send_message(message.chat.id, info_message)

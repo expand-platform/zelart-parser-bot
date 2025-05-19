@@ -10,7 +10,14 @@ class ConfigDocument:
     id: str = "_id"
     parse_time: str = "parse_time"
 
-config_document = ConfigDocument
+@dataclass
+class ProductDocument:
+    _id: str = "_id"
+    id: str = "id"
+
+config_document = ConfigDocument()
+product_document = ProductDocument()
+
 
 class Database():
     def __init__(self):
@@ -35,17 +42,19 @@ class Database():
                 print("Product inserted into database")
         except Exception as e:
             print(f"An error occurred: {e}")
+
         
-    def find_every_product(self):
+    def get_products(self) -> list:
         try:
-            products = self.products_collection.find()
-            # print("Products found in the database")
-            # for product in products:
-            #     print(product)
+            products = self.products_collection.find({})
             return products
         except Exception as e:
             print(f"An error occurred: {e}")
             return None
+        
+    def get_products_count(self) -> list:
+        return len(list(self.get_products()))
+
 
     def insert_user(self, user):
         try:
@@ -128,7 +137,10 @@ class Database():
         return parse_time
         
 
+    def remove_product(self, id: int) -> None:
+        document = self.products_collection.delete_one({product_document.id: id})
 
-
-    def delete(self):
-        pass
+        if document:
+            print(f"🟢 product {id} deleted from DB!")
+        else:
+            print(f"🟡 Product with {id} not found in DB!")

@@ -25,21 +25,18 @@ bot_commands = BotCommands()
 
 class Bot(telebot.TeleBot):
     def __init__(self):
-        # load_dotenv()
-        # config = dotenv_values(".env")
-    
-        # BOT_TOKEN = config["BOT_TOKEN"]
         BOT_TOKEN = os.environ["BOT_TOKEN"]
         super().__init__(BOT_TOKEN)
 
         self.db = Database()
-        # self.chat_id_for_reminder = os.getenv("REMINDER_CHAT_ID")
+        hours, minutes = self.db.get_parse_time()
 
         self.scheduler = BackgroundScheduler()
-        self.schedule_parse_time(19, 0)
+        self.schedule_parse_time(hours, minutes)
 
         self.setup_command_menu()
         self.setup_command_handlers()
+
 
     def setup_command_menu(self):
         commands = [
@@ -185,13 +182,6 @@ class Bot(telebot.TeleBot):
             else:
                 print("No chat id found for reminder")
 
-    
-    def schedule_parse_time(self, hour: int = 19, minutes: int = 0) -> None:
-        self.scheduler.remove_all_jobs()
-        self.scheduler.add_job(self.update_products_daily, 'cron', hour=hour, minute=minutes)
-        #? print(self.scheduler.get_jobs())
-        print(f"🟢 Products check will be started at {hour}:{minutes}")
-
 
     #! В идеале нужно сделать, чтобы time сохранялся ещё и в БД
     def set_time(self, message: Message) -> None:
@@ -199,6 +189,8 @@ class Bot(telebot.TeleBot):
         time: str = message.text
         hour, minutes = self.convert_time(time)
         #? print("🐍 hour / minutes: ",hour, minutes)
+
+        self.save_time([hour, minutes])
 
         if hour is None or minutes is None:
             self.send_message(message.chat.id, f"Перевiр формат вводу. Повинно бути два числа з двукрапкою: 19:00, 20:00...\n\nЗапусти команду /{bot_commands.set_time} ще раз та введи час у потрiбному форматi")
@@ -208,7 +200,18 @@ class Bot(telebot.TeleBot):
 
             self.send_message(message.chat.id, f"Добре, завожу годинник на {hour}:{minutes}! Чекай апдейти по товарам ⭐")
 
-    
+    def schedule_parse_time(self, hour: int = 19, minutes: int = 0) -> None:
+        self.scheduler.remove_all_jobs()
+        self.scheduler.add_job(self.update_products_daily, 'cron', hour=hour, minute=minutes)
+        #? print(self.scheduler.get_jobs())
+        print(f"🟢 Products check will be started at {hour}:{minutes}")
+
+
+    def save_time(self, time: list[int]):
+        """ saves time to DB """
+        self.db.update_config(key="parse_time", new_value=time)
+
+
     def format_minutes(self, minutes: int) -> str:
         """Formats minutes as a 2-digit string (e.g. 0 → '00', 5 → '05')"""
         return f"{minutes:02}"

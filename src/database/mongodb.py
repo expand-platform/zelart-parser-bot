@@ -1,6 +1,16 @@
 import pymongo
 import os
 from dotenv import load_dotenv, dotenv_values
+from pymongo.collection import Collection, ObjectId
+
+from dataclasses import dataclass
+
+@dataclass
+class ConfigDocument:
+    id: str = "_id"
+    parse_time: str = "parse_time"
+
+config_document = ConfigDocument
 
 class Database():
     def __init__(self):
@@ -11,6 +21,7 @@ class Database():
         self.db = self.client["zelart-parser"]
         self.products_collection = self.db["products"]
         self.users_collection = self.db["users"]
+        self.config_collection = self.db["config"]
 
 
     def insert_product(self, product):
@@ -69,6 +80,50 @@ class Database():
             print(f"Updated {field_name} to {new_value} for {key}: {value}")
         except Exception as e:
             print(f"An error occurred: {e}")
+
+
+    def update_config(self, key: str = "", new_value: str | int | bool = ""):
+        document = self.config_collection.find_one({})
+        print("🐍 document: ",document)
+
+        if document:
+            document_id = document[config_document.id]
+        else:
+            print(f"🔴 No config document found!")
+        
+        update_data = {'$set': {key: new_value}}
+        result = self.config_collection.update_one({'_id': ObjectId(document_id)}, update_data)
+        
+        if result.modified_count > 0:
+            print("🟢 Config updated!")
+
+        elif result.matched_count > 0:
+            print("🟡 Nothing new in config")
+        
+        else:
+            print("🔴 Error: no such _id or document in config collection")
+
+
+    def get_parse_time(self) -> list[int]:
+        document = self.config_collection.find_one({})
+
+        parse_time = [19, 0]
+
+        if document is None:
+            #? set default time
+            document = {
+                config_document.parse_time: parse_time
+            }
+            self.config_collection.insert_one(document)
+
+        else:
+            parse_time = document[config_document.parse_time]
+            print("🐍 parse_time: ",parse_time)
+            
+        return parse_time
+        
+
+
 
     def delete(self):
         pass

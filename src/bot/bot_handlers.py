@@ -70,7 +70,10 @@ class Bot(telebot.TeleBot):
         #? Команда для выставления времени
         @self.message_handler(commands=['time'])
         def set_time(message: Message):
-            self.send_message(message.from_user.id, "О котрiй менi краще перевiряти товари?\n\nЧас треба вводити з двукрапкою: 19:00, 20:00")
+            hours, minutes = self.db.get_parse_time()
+            minutes = self.format_minutes(minutes)
+            
+            self.send_message(message.from_user.id, f"О котрiй менi краще перевiряти товари?\n\nЗараз це {hours}:{minutes}")
             self.register_next_step_handler(message, self.set_time)
 
 

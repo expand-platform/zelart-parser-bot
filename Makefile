@@ -1,5 +1,5 @@
 run:
 	py main.py
 
-save:
+ready:
 	git add . && git commit && git push

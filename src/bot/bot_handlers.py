@@ -42,7 +42,7 @@ class Bot(telebot.TeleBot):
         commands = [
             BotCommand(command="start", description="Почати роботу"),
             BotCommand(command="time", description="Задати час парсингу"),
-            BotCommand(command="parse", description="Запустити парсинг"),
+            BotCommand(command="parse", description="Додати товар"),
             BotCommand(command="help", description="Допомога"),
         ]
         self.set_my_commands(commands)
@@ -64,7 +64,7 @@ class Bot(telebot.TeleBot):
 
         @self.message_handler(commands=['parse'])
         def send_welcome(message: Message):
-            self.send_message(message.from_user.id, "Введи посилання на товар iз сайту {ZELART_WEBSITE}")
+            self.send_message(message.from_user.id, f"Введи посилання на товар iз сайту {ZELART_WEBSITE}")
             self.register_next_step_handler(message, self.process_parse_link)
         
         #? Команда для выставления времени
@@ -79,7 +79,7 @@ class Bot(telebot.TeleBot):
 
         @self.message_handler(commands=['help'])
         def send_help(message: Message):
-            self.send_message(message.from_user.id, "Усі команди бота:\n/start - Старт\n/parse - Парсинг посилання\n/help - Список команд")
+            self.send_message(message.from_user.id, "Усі команди бота:\n/start - Старт\n/parse - Додати товар\n/time - Задати час парсингу\n/help - Список команд")
 
 
     def process_parse_link(self, message: Message):
@@ -101,11 +101,10 @@ class Bot(telebot.TeleBot):
             f"""Парсинг посилання: {link}
 
 Назва: {product["title"]}
-Ціна: {product["priceCur"]} грн
-Ціна оптом: {product["priceBigOpt"]} грн
+Ціна оптом: {product["priceCur"]} грн
 Цількість товарів для опту: {product["bigOptQuantity"]} шт
 Рекомендована роздрібна ціна: {product["priceSrp"]} грн
-Наявність?: {stock}
+Наявність: {stock}
 """
             )
         elif product["priceCur"] != product["priceWithDiscount"]:
@@ -114,12 +113,11 @@ class Bot(telebot.TeleBot):
             f"""Парсинг посилання: {link}
 
 Назва: {product["title"]}
-Ціна: {product["priceCur"]} грн
+Ціна оптом: {product["priceCur"]} грн
 Ціна зі знижкою: {product["priceWithDiscount"]} грн
-Ціна оптом: {product["priceBigOpt"]} грн
 Цількість товарів для опту: {product["bigOptQuantity"]} шт
 Рекомендована роздрібна ціна: {product["priceSrp"]} грн
-Наявність?: {stock}
+Наявність: {stock}
 """
             )
 
@@ -201,7 +199,7 @@ class Bot(telebot.TeleBot):
             self.schedule_parse_time(hour, minutes)
             minutes = self.format_minutes(minutes)
 
-            self.send_message(message.chat.id, f"Добре, завожу годинник на {hour}:{minutes}! Чекай апдейти по товарам ⭐")
+            self.send_message(message.chat.id, f"Добре, заводжу годинник на {hour}:{minutes}!\n\nЧекай апдейти по товарам ⭐")
 
     def schedule_parse_time(self, hour: int = 19, minutes: int = 0) -> None:
         self.scheduler.remove_all_jobs()

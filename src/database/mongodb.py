@@ -21,9 +21,6 @@ product_document = ProductDocument()
 
 class Database():
     def __init__(self):
-        # load_dotenv()
-        # config = dotenv_values(".env")
-        # self.client = pymongo.MongoClient(config["MONGODB"])
         self.client = pymongo.MongoClient(os.environ["MONGODB"])
         self.db = self.client["zelart-parser"]
         self.products_collection = self.db["products"]

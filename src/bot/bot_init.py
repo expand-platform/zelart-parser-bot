@@ -1,10 +1,14 @@
 from src.bot.bot_handlers import Bot
-from fastapi import FastAPI
-from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+import os
 
 
 def start_bot():
-    bot = Bot()
-    #! нужно использовать infinity_polling!
-    print(f"🟢 Bot launched!")
-    bot.polling()
+    print(f"✅ Bot launched!") 
+    environment = os.environ["ENVIRONMENT"]
+    if environment == "PRODUCTION":
+        print("🌐  Bot is running in production mode")
+        Bot().bot.infinity_polling()
+    elif environment == "DEVELOPMENT":
+        print("⚙️  Bot is running in development mode")
+        Bot().bot.infinity_polling(restart_on_change=True)

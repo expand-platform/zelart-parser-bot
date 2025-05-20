@@ -2,14 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import os
-from dotenv import load_dotenv
 import urllib3
 
 class PrestaShopScraper:
     def __init__(self):
-        # load_dotenv()
-        # self.email = os.getenv("LOGIN")
-        # self.password = os.getenv("PASSWORD")
         self.email = os.environ["LOGIN"]
         self.password = os.environ["PASSWORD"]
 
@@ -44,7 +40,6 @@ class PrestaShopScraper:
         }
 
         try:
-            # print("payload", payload)
             response = self.session.post(self.login_url, data=payload, headers=headers, verify=False)
             if response.status_code == 200 and "logout" in response.text.lower():
                 print("✅ Login successful")
@@ -97,47 +92,7 @@ class PrestaShopScraper:
 
 
     def scrape_product(self, url):
-        """Scrape all product pages."""
+        """ Scrape product information (Do not use this with loops, use login() + parse_product(), only use this for a single product) """
         self.login()
         product = self.parse_product(url)
         return product
-        
-
-    def product_prettify(self, product):
-        product_info_prettified = ''
-        for key in product:
-            if key == "id":
-                pass
-            elif key == "title":
-                product_info_prettified += f"Title: {product['title']}\n"
-                # print("Title:", product['title'])
-            elif key == "priceCur":
-                product_info_prettified += f"Price: {product['priceCur']}\n"
-                # print("Price:", product['priceCur'])
-            elif key == "priceWithDiscount":
-                if product['priceWithDiscount'] != product['priceCur']:
-                    product_info_prettified += f"Discounted price: {product['priceWithDiscount']}\n"
-                    # print("Discounted price:", product['priceWithDiscount'])
-            elif key == "priceBigOpt":
-                product_info_prettified += f"Opt price: {product['priceBigOpt']}\n"
-                # print("Opt price:", product['priceBigOpt'])
-            elif key == "bigOptQuantity":
-                product_info_prettified += f"Opt quantity: {product['bigOptQuantity']}\n"
-                # print("Opt quantity:", product['bigOptQuantity'])
-            elif key == "priceSrp":
-                product_info_prettified += f"Retail price: {product['priceSrp']}\n"
-                # print("Retail price:", product['priceSrp'])
-            elif key == "isHidden":
-                if product['isHidden'] == True:
-                    product_info_prettified += f"Product is unavailable\n"
-                    # print("Product is unavailable")
-                else:
-                    product_info_prettified += f"Product is available\n"
-                    # print("Product is available")
-            elif key == "url":
-                product_info_prettified += f"URL: {product['url']}\n"
-                # print("URL:", product['url'])
-            else:
-                pass
-                # print(key, product[key])
-        return product_info_prettified

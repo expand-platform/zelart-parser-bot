@@ -36,7 +36,8 @@ class Bot:
         hours, minutes = self.db.get_parse_time()
 
         self.scheduler = BackgroundScheduler()
-        self.helpers.schedule_parse_time(self.scheduler, hours, minutes)
+        self.helpers.schedule_parse_time(self.scheduler, hours, minutes) 
+        
 
         self.setup_command_menu()
         self.setup_command_handlers()
@@ -62,7 +63,7 @@ class Bot:
             }
             self.db.insert_user(user)
 
-            self.helpers.update_products_daily()
+            # self.helpers.update_products_daily()
             self.bot.send_message(message.from_user.id, f"Привіт! Я бот для парсингу {ZELART_WEBSITE}")
             self.helpers.get_info(message)
 
@@ -129,7 +130,6 @@ class Bot:
                 self.bot.send_message(message.from_user.id, f"О котрiй менi краще перевiряти товари?\n\nЗараз це {parse_time}")
                 self.bot.register_next_step_handler(message, set_time_second_step)
 
-            #! В идеале нужно сделать, чтобы time сохранялся ещё и в БД
             def set_time_second_step(message: Message) -> None:
                 """ sets check time from given message """
                 time: str = message.text

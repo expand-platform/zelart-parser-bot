@@ -7,7 +7,7 @@ class FieldConfig:
     unit: str = ""
     format_func: Callable[[Union[str, int, float, bool]], str] = lambda x: str(x)
 
-# Конфигурация полей
+
 FIELDS = {
     "priceCur": FieldConfig("Ціна", "грн"),
     "priceWithDiscount": FieldConfig("Ціна зі знижкою", "грн"),

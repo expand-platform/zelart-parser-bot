@@ -81,8 +81,6 @@ class PrestaShopScraper:
             "title": data['model']['title'],
             "priceCur": data['product']['priceCur'],
             "priceWithDiscount": data['product']['priceWithDiscount'],
-            "priceBigOpt": data['product']['priceBigOpt'],
-            "bigOptQuantity": data['product']['bigOptQuantity'],
             "priceSrp": data['product']['priceSrp'],
             "isHidden": data['product']['isHidden'],
             "url": url

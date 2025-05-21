@@ -3,6 +3,7 @@ from telebot.types import Message
 from src.parser.zelart_parser import PrestaShopScraper
 from src.bot.dataclass import FIELDS, FieldConfig
 from src.bot.bot_messages import messages
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 class Helpers:
@@ -10,44 +11,52 @@ class Helpers:
         self.db = Database()
         self.bot = bot
 
-    
+    # ! разбить стену кода на функции
     def update_products_daily(self):
         """ updates products in DB and sends message to users """
+        users = self.db.find_every_user()
+        for product_key in users:
+            try:
+                self.bot.send_message(product_key["chat_id"], messages["scheduler_start_parsing"])
+            except Exception as e:
+                print(f"Error sending message to user {product_key['chat_id']}: {e}")
         products = self.db.get_products()  
         parser = PrestaShopScraper()
         parser.login()
         all_products_change_status = False
-        for product_database in products:
-            link = product_database["url"]
-            product_parser = parser.parse_product(link)
+        for product_from_database in products:
+            link = product_from_database["url"]
+            product_from_parser = parser.parse_product(link)
             product_change_status = False
-            reply_string = messages["scheduler_parse_string_start"].format(product_parser["title"])
-            for i in product_parser:
-                if product_parser[i] != product_database[i]:
-                    product_change_status = True
-                    all_products_change_status = True
+            reply_string = messages["scheduler_parse_string_start"].format(product_from_parser["title"], link)
+            for product_key in product_from_parser:
+                if product_key == "priceCur" or product_key == "priceWithDiscount" or product_key == "priceSrp" or product_key == "isHidden":
+                    if product_from_parser[product_key] != product_from_database[product_key]:
+                        
+                        product_change_status = True
+                        all_products_change_status = True
 
-                    field = FIELDS.get(i)
+                        field = FIELDS.get(product_key)
 
-                    if not field:
-                        continue
+                        if not field:
+                            continue
 
-                    key = field.display_name
-                    key_value_database = field.format_func(product_database[i])
-                    key_value_parser = field.format_func(product_parser[i])
+                        key = field.display_name
+                        key_value_database = field.format_func(product_from_database[product_key])
+                        key_value_parser = field.format_func(product_from_parser[product_key])
 
-                    if field.unit and i != "isHidden":
-                        key_value_database += f" {field.unit}"
-                        key_value_parser += f" {field.unit}"
+                        if field.unit and product_key != "isHidden":
+                            key_value_database += f" {field.unit}"
+                            key_value_parser += f" {field.unit}"
 
 
-                    reply_string += messages["scheduler_parse_string"].format(key, key_value_database, key_value_parser)
-                    self.db.update("url", link, i, product_parser[i])
+                        reply_string += messages["scheduler_parse_string_add"].format(key, key_value_database, key_value_parser)
+                        self.db.update("url", link, product_key, product_from_parser[product_key])
 
             if product_change_status == False:
-                print(f"product {i} has not changed")
+                print(f"product {product_key} has not changed")
             if product_change_status == True:
-                print(f"product {i} has changed")
+                print(f"product {product_key} has changed")
                 users = self.db.find_every_user()
                 for user in users:
                     self.chat_id_for_reminder = user["chat_id"]
@@ -55,8 +64,8 @@ class Helpers:
                         self.bot.send_message(self.chat_id_for_reminder, reply_string)
                     except Exception as e:
                         print(f"Error sending message to user {self.chat_id_for_reminder}: {e}")
+        # ! Временное решение, надо будет сделать контроль рассылки
         if all_products_change_status == False:
-                users = self.db.find_every_user()
                 for user in users:
                     try:
                         self.bot.send_message(user["chat_id"], messages["scheduler_parse_string_no_changes"])
@@ -64,11 +73,12 @@ class Helpers:
                         print(f"Error sending message to user {user["chat_id"]}: {e}")
 
         
-    def schedule_parse_time(self, scheduler, hour: int = 19, minutes: int = 0) -> None:
+    def schedule_parse_time(self, scheduler: BackgroundScheduler, hour: int = 19, minute: int = 0) -> None:
         scheduler.remove_all_jobs()
-        scheduler.add_job(self.update_products_daily, 'cron', hour=hour, minute=minutes)
+        scheduler.add_job(self.update_products_daily, 'cron', hour=hour, minute=minute) 
+
         #? print(self.scheduler.get_jobs())
-        print(f"🟢 Products check will be started at {hour}:{minutes}")
+        print(f"🟢 Products check will be started at {hour}:{minute}")
 
 
     def save_time(self, time: list[int]):

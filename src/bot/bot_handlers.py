@@ -32,12 +32,11 @@ class Bot:
         self.helpers = Helpers(self.bot)
 
         self.db = Database()
-        hours, minutes = self.db.get_parse_time()
+        hour, minute = self.db.get_parse_time()
 
         self.scheduler = BackgroundScheduler()
-        self.helpers.schedule_parse_time(self.scheduler, hours, minutes) 
-        # self.scheduler.remove_all_jobs()
-        # self.scheduler.add_job(self.helpers.update_products_daily, 'cron', hour=14, minute=19)
+        self.helpers.schedule_parse_time(self.scheduler, hour=hour, minute=minute) 
+        self.scheduler.start()
         
 
         self.setup_command_menu()
@@ -64,7 +63,6 @@ class Bot:
             }
             self.db.insert_user(user)
 
-            self.helpers.update_products_daily()
             self.bot.send_message(message.from_user.id, messages["start"].format(constant_variables["ZELART_WEBSITE"]))
             self.helpers.get_info(message)
 
@@ -96,11 +94,7 @@ class Bot:
                     if product["priceCur"] != product["priceWithDiscount"]:
                         discount_string = messages["optional_discount_string"].format(product["priceWithDiscount"])
                     
-                    opt_string = ""
-                    if product["priceBigOpt"] != 0:
-                        opt_string = messages["optional_big_opt_string"].format(product["priceBigOpt"], product["bigOptQuantity"])
-
-                    self.bot.send_message(message.from_user.id, messages["add_product_second_step"].format(link, product["title"], product["priceCur"], discount_string, opt_string, product["priceSrp"], stock))
+                    self.bot.send_message(message.from_user.id, messages["add_product_second_step"].format(link, product["title"], product["priceCur"], discount_string, product["priceSrp"], stock))
 
                 except:
                     self.bot.send_message(message.from_user.id, messages["add_product_second_step_fail"])

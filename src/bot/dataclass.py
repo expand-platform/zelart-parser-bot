@@ -11,8 +11,6 @@ class FieldConfig:
 FIELDS = {
     "priceCur": FieldConfig("Ціна", "грн"),
     "priceWithDiscount": FieldConfig("Ціна зі знижкою", "грн"),
-    "priceBigOpt": FieldConfig("Ціна оптом", "грн"),
-    "bigOptQuantity": FieldConfig("Цількість товарів для опту", "шт"),
     "priceSrp": FieldConfig("Рекомендована роздрібна ціна", "грн"),
     "isHidden": FieldConfig(
         "Наявність",

@@ -2,6 +2,7 @@ from src.database.mongodb import Database
 from telebot.types import Message
 from src.parser.zelart_parser import PrestaShopScraper
 from src.bot.dataclass import FIELDS, FieldConfig
+from src.bot.bot_messages import messages
 
 
 class Helpers:
@@ -20,7 +21,7 @@ class Helpers:
             link = product_database["url"]
             product_parser = parser.parse_product(link)
             product_change_status = False
-            reply_string = f"Характеристики товару {product_parser['title']} змінились:\n\n"
+            reply_string = messages["scheduler_parse_string_start"].format(product_parser["title"])
             for i in product_parser:
                 if product_parser[i] != product_database[i]:
                     product_change_status = True
@@ -40,7 +41,7 @@ class Helpers:
                         key_value_parser += f" {field.unit}"
 
 
-                    reply_string += f"{key} товару змінилась.\nРаніше: {key_value_database}\nЗараз: {key_value_parser}\n\n"
+                    reply_string += messages["scheduler_parse_string"].format(key, key_value_database, key_value_parser)
                     self.db.update("url", link, i, product_parser[i])
 
             if product_change_status == False:
@@ -55,16 +56,14 @@ class Helpers:
                     except Exception as e:
                         print(f"Error sending message to user {self.chat_id_for_reminder}: {e}")
         if all_products_change_status == False:
-            try:
                 users = self.db.find_every_user()
                 for user in users:
-                    self.bot.send_message(user["chat_id"], 'Характеристики товарів не змінились.')
-            except Exception as e:
-                print(f"Error sending message to user: {e}")
+                    try:
+                        self.bot.send_message(user["chat_id"], messages["scheduler_parse_string_no_changes"])
+                    except Exception as e:
+                        print(f"Error sending message to user {user["chat_id"]}: {e}")
 
         
-    
-
     def schedule_parse_time(self, scheduler, hour: int = 19, minutes: int = 0) -> None:
         scheduler.remove_all_jobs()
         scheduler.add_job(self.update_products_daily, 'cron', hour=hour, minute=minutes)
@@ -99,6 +98,6 @@ class Helpers:
         products_count = self.db.get_products_count()
         parse_time = self.get_parse_time()
         
-        info_message = f"1. Зараз я слiдкую за {products_count} товарами 🔍\n2. Я надсилаю тобi апдейти у {parse_time} ⌚"
+        info_message = messages["info_string"].format(products_count, parse_time)
 
         self.bot.send_message(message.chat.id, info_message)

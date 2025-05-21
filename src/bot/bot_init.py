@@ -1,10 +1,6 @@
 from src.bot.bot_handlers import Bot
 from dotenv import load_dotenv
-from datetime import datetime
 from os import environ
-
-current_hour = datetime.now().hour
-print("🐍 current_hour is:", current_hour)
 
 
 def start_bot():
@@ -18,3 +14,4 @@ def start_bot():
     elif environment == "DEVELOPMENT":
         print("⚙️  Bot is running in development mode")
         Bot().bot.infinity_polling(restart_on_change=True)
+        # Bot().bot.infinity_polling()

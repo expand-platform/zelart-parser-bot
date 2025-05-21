@@ -90,7 +90,6 @@ class Database():
 
     def update_config(self, key: str = "", new_value: str | int | bool = ""):
         document = self.config_collection.find_one({})
-        print("🐍 document: ",document)
 
         if document:
             document_id = document[config_document.id]
@@ -101,7 +100,7 @@ class Database():
         result = self.config_collection.update_one({'_id': ObjectId(document_id)}, update_data)
         
         if result.modified_count > 0:
-            print("🟢 Config updated!")
+            print(f"🟢 Config updated: {key}:{new_value}")
 
         elif result.matched_count > 0:
             print("🟡 Nothing new in config")

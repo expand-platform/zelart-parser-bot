@@ -4,22 +4,28 @@ import os
 from src.parser.zelart_parser import PrestaShopScraper
 from src.database.mongodb import Database
 from apscheduler.schedulers.background import BackgroundScheduler
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from src.bot.exception_handler import ExceptionHandler
 from src.bot.helpers import Helpers
 from src.bot.bot_messages import messages
 from src.bot.constant_variables import constant_variables
 
 
-#? датаклассы - это имба
+@dataclass
+class Command:
+    name: str
+    description: str
+
 @dataclass
 class BotCommands:
-    start: str = "start"
-    add_product: str = "add"
-    remove_product: str = "remove"
-    set_time: str = "time"
-    info: str = "info"
-    help: str = "help"
+    start: Command = field(default_factory=lambda: Command(name="start", description="Старт"))
+    add_product: Command = field(default_factory=lambda: Command(name="add", description="Додати товар"))
+    remove_product: Command = field(default_factory=lambda: Command(name="remove", description="Видалити товар"))
+    parse: Command = field(default_factory=lambda: Command(name="parse", description="Перевiрити змiни в товарах"))
+    set_time: Command = field(default_factory=lambda: Command(name="schedule", description="Задати час парсингу"))
+    info: Command = field(default_factory=lambda: Command(name="info", description="Звiт"))
+    menu: Command = field(default_factory=lambda: Command(name="menu", description="Всi команди бота"))
+
 
 bot_commands = BotCommands()
 
@@ -45,17 +51,18 @@ class Bot:
 
     def setup_command_menu(self):
         commands = [
-            BotCommand(command=bot_commands.add_product, description="Додати товар"),
-            BotCommand(command=bot_commands.remove_product, description="Видалити товар"),
-            BotCommand(command=bot_commands.info, description="Звiт"),
-            BotCommand(command=bot_commands.set_time, description="Задати час парсингу"),
-            BotCommand(command=bot_commands.help, description="Всi команди бота"),
+            BotCommand(command=bot_commands.add_product.name, description=bot_commands.add_product.description),
+            BotCommand(command=bot_commands.remove_product.name, description=bot_commands.remove_product.description),
+            BotCommand(command=bot_commands.parse.name, description=bot_commands.parse.description),
+            BotCommand(command=bot_commands.info.name, description=bot_commands.info.description),
+            BotCommand(command=bot_commands.set_time.name, description=bot_commands.set_time.description),
+            # BotCommand(command=bot_commands.help.name, description=bot_commands.help.description),
         ]
         self.bot.set_my_commands(commands)
 
 
     def setup_command_handlers(self):
-        @self.bot.message_handler(commands=[bot_commands.start])
+        @self.bot.message_handler(commands=[bot_commands.start.name])
         def send_welcome(message: Message):
             user = {
                 "chat_id": message.from_user.id,
@@ -68,9 +75,9 @@ class Bot:
 
         def add_product_command_chain():
             """ adds product to DB """
-            # ? /add
 
-            @self.bot.message_handler(commands=[bot_commands.add_product]) 
+            # ? /add
+            @self.bot.message_handler(commands=[bot_commands.add_product.name]) 
             def add_product(message: Message):
                 """ first step of adding product """
                 self.bot.send_message(message.from_user.id, messages["add_product_first_step"].format(constant_variables["ZELART_WEBSITE"]))
@@ -102,9 +109,9 @@ class Bot:
 
         def set_time_command_chain():
             """ sets time for checking products """
+
             #? /time
-            
-            @self.bot.message_handler(commands=[bot_commands.set_time])
+            @self.bot.message_handler(commands=[bot_commands.set_time.name])
             def set_time(message: Message):
                 """ first step of setting time """
                 parse_time = self.helpers.get_parse_time()
@@ -130,9 +137,9 @@ class Bot:
         
         def remove_product_command_chain():
             """ removes product from DB """
-            #? /remove
 
-            @self.bot.message_handler(commands=[bot_commands.remove_product])
+            #? /remove
+            @self.bot.message_handler(commands=[bot_commands.remove_product.name])
             def remove_product(message: Message):
                 """ first step of removing product """
                 self.bot.send_message(message.from_user.id, messages["remove_product_first_step"])
@@ -155,13 +162,18 @@ class Bot:
                     self.bot.send_message(message.chat.id, messages["remove_product_second_step_fail"])
         remove_product_command_chain()
         
+        #? /parse
+        @self.bot.message_handler(commands=[bot_commands.parse.name])
+        def parse(message: Message):
+            self.helpers.update_products_daily()
+        
         #? /info
-        @self.bot.message_handler(commands=[bot_commands.info])
+        @self.bot.message_handler(commands=[bot_commands.info.name])
         def get_info(message: Message):
             self.bot.send_message(message.from_user.id, messages["info"])
             self.helpers.get_info(message)
         
         #? /help
-        @self.bot.message_handler(commands=[bot_commands.help])
+        @self.bot.message_handler(commands=[bot_commands.menu.name])
         def get_help(message: Message):
             self.bot.send_message(message.from_user.id, messages["help"])

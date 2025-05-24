@@ -77,13 +77,16 @@ class Helpers:
                         print(f"Error sending message to user {self.chat_id_for_reminder}: {e}")
         
         #! Временное решение, надо будет сделать контроль рассылки
-        if all_products_change_status == False:
-            users = self.db.find_every_user()
-            for user in users:
-                try:
+        users = self.db.find_every_user()
+        for user in users:
+            try:
+                if all_products_change_status == False:
                     self.bot.send_message(user["chat_id"], messages["scheduler_parse_string_no_changes"])
-                except Exception as e:
-                    print(f"Error sending message to user {user["chat_id"]}: {e}")
+                else:
+                    self.bot.send_message(user["chat_id"], messages["parse_final"])
+            except Exception as e:
+                print(f"Error sending message to user {user["chat_id"]}: {e}")
+
 
         
     def schedule_parse_time(self, scheduler: BackgroundScheduler, hour: int = 19, minute: int = 0) -> None:

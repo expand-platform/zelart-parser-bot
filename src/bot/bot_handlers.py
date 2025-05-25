@@ -92,7 +92,7 @@ class Bot:
                     parser = PrestaShopScraper()
                     product = parser.scrape_product(link)
 
-                    if product is None:
+                    if isinstance(product, str):
                         self.bot.send_message(message.from_user.id, messages.product_not_found)
                         return
 

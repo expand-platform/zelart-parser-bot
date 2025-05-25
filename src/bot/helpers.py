@@ -15,18 +15,23 @@ class Helpers:
         self.db = Database()
         self.bot = bot
         self.ENVIRONMENT: str = environ["ENVIRONMENT"]
+
+    
+    #! убрать костыль с юзерами
+    def notify_users(self, message: str) -> None:
+        users = self.db.find_every_user()
+
+        for user in users:
+            try:
+                self.bot.send_message(user["chat_id"], message)
+            except Exception as e:
+                print(f"Error sending message to user {user['chat_id']}: {e}")
+
  
     # ! разбить стену кода на функции
     def update_products_daily(self):
         """ updates products in DB and sends message to users """
-        users = self.db.find_every_user()
-        
-        #! убрать костыль с юзерами
-        for user in users:
-            try:
-                self.bot.send_message(user["chat_id"], messages.scheduler_start_parsing)
-            except Exception as e:
-                print(f"Error sending message to user {user['chat_id']}: {e}")
+        self.notify_users(messages.scheduler_start_parsing)
         
         products = self.db.get_products()  
         parser = PrestaShopScraper()
@@ -37,11 +42,17 @@ class Helpers:
         for product_from_database in products:
             link = product_from_database["url"]
             product_from_parser = parser.parse_product(link)
+            # print("🐍 link:", link)
+            # print("🐍 product_from_parser",product_from_parser)
 
-            #? when product link is no longer exists
-            if product_from_parser is None:
-                # remove product from db by it's link | id
-                self.db.remove_product()
+            #? when product is no longer exists on the website,
+            #? remove it from db
+            if isinstance(product_from_parser, str):
+                removed_product = self.db.find(key="url", value=link)
+                self.db.remove_product(id=removed_product["id"])
+                self.notify_users(messages.product_was_removed.format(link))
+                all_products_change_status = True
+                continue
 
 
             product_change_status = False
@@ -74,29 +85,15 @@ class Helpers:
             if product_change_status == False:
                 print(f"➖ product has not changed")
             
-            elif product_change_status == True:
+            else:
                 print(f"➕ product has changed")
-                users = self.db.find_every_user()
-                
-                #! для этого можно и функцию написать, часто используется                
-                for user in users:
-                    self.chat_id_for_reminder = user["chat_id"]
-                    try:
-                        self.bot.send_message(self.chat_id_for_reminder, reply_string)
-                    except Exception as e:
-                        print(f"Error sending message to user {self.chat_id_for_reminder}: {e}")
+                self.notify_users(reply_string)
         
         #! Временное решение, надо будет сделать контроль рассылки
-        users = self.db.find_every_user()
-        for user in users:
-            try:
-                if all_products_change_status == False:
-                    self.bot.send_message(user["chat_id"], messages.scheduler_parse_string_no_changes)
-                else:
-                    self.bot.send_message(user["chat_id"], messages.parse_final)
-            except Exception as e:
-                print(f"Error sending message to user {user["chat_id"]}: {e}")
-
+        if all_products_change_status == False:
+            self.notify_users(messages.scheduler_parse_string_no_changes)
+        else:
+            self.notify_users(messages.parse_final)
 
         
     def schedule_parse_time(self, scheduler: BackgroundScheduler, hour: int = 19, minute: int = 0) -> None:

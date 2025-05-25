@@ -76,8 +76,8 @@ class Database():
             print(f"An error occurred: {e}")
             return None
 
-    def find(self, key, value):
-        self.products_collection.find_one({key: value})
+    def find(self, key: str, value: str | int | bool | list) -> dict | None:
+        return self.products_collection.find_one({key: value})
         
 
     def update(self, key, value, field_name, new_value):

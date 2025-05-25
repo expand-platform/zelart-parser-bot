@@ -64,11 +64,14 @@ class PrestaShopScraper:
             return None
         
 
-    def parse_product(self, url):
+    def parse_product(self, url: str) -> dict | None:
         """Extract title, price, and description from a product page."""
         html = self.fetch_page(url)
+        print("🐍 html: ", html)
+
         if not html:
-            return
+            print(f"No HTML found!")
+            return None
 
         soup = BeautifulSoup(html, "html.parser")
 

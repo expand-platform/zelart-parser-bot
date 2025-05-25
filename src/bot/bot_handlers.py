@@ -7,7 +7,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from dataclasses import dataclass, field
 from src.bot.exception_handler import ExceptionHandler
 from src.bot.helpers import Helpers
-from src.bot.bot_messages import messages
+from src.bot.messages import messages
 from src.bot.constant_variables import constant_variables
 
 
@@ -48,6 +48,8 @@ class Bot:
         self.setup_command_menu()
         self.setup_command_handlers()
 
+        self.messages = messages
+
 
     def setup_command_menu(self):
         commands = [
@@ -70,7 +72,7 @@ class Bot:
             }
             self.db.insert_user(user)
 
-            self.bot.send_message(message.from_user.id, messages["start"].format(constant_variables["ZELART_WEBSITE"]))
+            self.bot.send_message(message.from_user.id, self.messages.start.format(constant_variables["ZELART_WEBSITE"]))
             self.helpers.get_info(message)
 
         def add_product_command_chain():
@@ -80,7 +82,7 @@ class Bot:
             @self.bot.message_handler(commands=[bot_commands.add_product.name]) 
             def add_product(message: Message):
                 """ first step of adding product """
-                self.bot.send_message(message.from_user.id, messages["add_product_first_step"].format(constant_variables["ZELART_WEBSITE"]))
+                self.bot.send_message(message.from_user.id, self.messages.add_product_first_step.format(constant_variables["ZELART_WEBSITE"]))
                 self.bot.register_next_step_handler(message, process_parse_link)
 
             def process_parse_link(message: Message):
@@ -89,6 +91,10 @@ class Bot:
                     link = message.text
                     parser = PrestaShopScraper()
                     product = parser.scrape_product(link)
+
+                    if product is None:
+                        self.bot.send_message(message.from_user.id, messages.product_not_found)
+                        return
 
                     self.db.insert_product(product)
 
@@ -99,12 +105,12 @@ class Bot:
 
                     discount_string = ""
                     if product["priceCur"] != product["priceWithDiscount"]:
-                        discount_string = messages["optional_discount_string"].format(product["priceWithDiscount"])
+                        discount_string = self.messages.optional_discount_string.format(product["priceWithDiscount"])
                     
-                    self.bot.send_message(message.from_user.id, messages["add_product_second_step"].format(link, product["title"], product["priceCur"], discount_string, product["priceSrp"], stock))
+                    self.bot.send_message(message.from_user.id, self.messages.add_product_second_step.format(link, product["title"], product["priceCur"], discount_string, product["priceSrp"], stock))
 
                 except:
-                    self.bot.send_message(message.from_user.id, messages["add_product_second_step_fail"])
+                    self.bot.send_message(message.from_user.id, self.messages.add_product_second_step_fail)
         add_product_command_chain()
 
         def set_time_command_chain():
@@ -116,7 +122,7 @@ class Bot:
                 """ first step of setting time """
                 parse_time = self.helpers.get_parse_time()
                 
-                self.bot.send_message(message.from_user.id, messages["set_time_first_step"].format(parse_time))
+                self.bot.send_message(message.from_user.id, self.messages.set_time_first_step.format(parse_time))
                 self.bot.register_next_step_handler(message, set_time_second_step)
 
             def set_time_second_step(message: Message) -> None:
@@ -127,12 +133,12 @@ class Bot:
                 self.helpers.save_time([hour, minutes])
 
                 if hour is None or minutes is None:
-                    self.bot.send_message(message.chat.id, messages["set_time_second_step_fail"])
+                    self.bot.send_message(message.chat.id, self.messages.set_time_second_step_fail)
                 else: 
                     self.helpers.schedule_parse_time(self.scheduler, hour, minutes)
                     minutes = self.helpers.format_minutes(minutes)
 
-                    self.bot.send_message(message.chat.id, messages["set_time_second_step_success"].format(hour, minutes))
+                    self.bot.send_message(message.chat.id, self.messages.set_time_second_step_success.format(hour, minutes))
         set_time_command_chain()
         
         def remove_product_command_chain():
@@ -142,7 +148,7 @@ class Bot:
             @self.bot.message_handler(commands=[bot_commands.remove_product.name])
             def remove_product(message: Message):
                 """ first step of removing product """
-                self.bot.send_message(message.from_user.id, messages["remove_product_first_step"])
+                self.bot.send_message(message.from_user.id, self.messages.remove_product_first_step)
                 self.bot.register_next_step_handler(message, remove_product_second_step)
 
             def remove_product_second_step(message: Message):
@@ -155,11 +161,11 @@ class Bot:
                 if product:
                     product_id = product["id"]
                     self.db.remove_product(product_id)
-                    self.bot.send_message(message.chat.id, messages["remove_product_second_step_success"].format(product_id))
+                    self.bot.send_message(message.chat.id, self.messages.remove_product_second_step_success.format(product_id))
 
                 else:
                     print(f"Can't get product info by this link: {link}")
-                    self.bot.send_message(message.chat.id, messages["remove_product_second_step_fail"])
+                    self.bot.send_message(message.chat.id, self.messages.remove_product_second_step_fail)
         remove_product_command_chain()
         
         #? /parse
@@ -170,10 +176,10 @@ class Bot:
         #? /info
         @self.bot.message_handler(commands=[bot_commands.info.name])
         def get_info(message: Message):
-            self.bot.send_message(message.from_user.id, messages["info"])
+            self.bot.send_message(message.from_user.id, self.messages.info)
             self.helpers.get_info(message)
         
         #? /help
         @self.bot.message_handler(commands=[bot_commands.menu.name])
         def get_help(message: Message):
-            self.bot.send_message(message.from_user.id, messages["help"])
+            self.bot.send_message(message.from_user.id, self.messages.help)

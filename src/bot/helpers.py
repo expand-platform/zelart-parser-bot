@@ -1,18 +1,21 @@
 from src.database.mongodb import Database
 from telebot import TeleBot
 from telebot.types import Message
+
+from src.bot.messages import messages
 from src.parser.zelart_parser import PrestaShopScraper
 from src.bot.dataclass import FIELDS, FieldConfig
-from src.bot.bot_messages import messages
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from os import environ
+
 
 class Helpers:
     def __init__(self, bot: TeleBot):
         self.db = Database()
         self.bot = bot
         self.ENVIRONMENT: str = environ["ENVIRONMENT"]
-
+ 
     # ! разбить стену кода на функции
     def update_products_daily(self):
         """ updates products in DB and sends message to users """
@@ -21,7 +24,7 @@ class Helpers:
         #! убрать костыль с юзерами
         for user in users:
             try:
-                self.bot.send_message(user["chat_id"], messages["scheduler_start_parsing"])
+                self.bot.send_message(user["chat_id"], messages.scheduler_start_parsing)
             except Exception as e:
                 print(f"Error sending message to user {user['chat_id']}: {e}")
         
@@ -34,8 +37,15 @@ class Helpers:
         for product_from_database in products:
             link = product_from_database["url"]
             product_from_parser = parser.parse_product(link)
+
+            #? when product link is no longer exists
+            if product_from_parser is None:
+                # remove product from db by it's link | id
+                self.db.remove_product()
+
+
             product_change_status = False
-            reply_string = messages["scheduler_parse_string_start"].format(product_from_parser["title"], link)
+            reply_string = messages.scheduler_parse_string_start.format(product_from_parser["title"], link)
             
             for product_key in product_from_parser:
                 if product_key == "priceCur" or product_key == "priceWithDiscount" or product_key == "priceSrp" or product_key == "isHidden":
@@ -58,7 +68,7 @@ class Helpers:
                             key_value_parser += f" {field.unit}"
 
 
-                        reply_string += messages["scheduler_parse_string_add"].format(key, key_value_database, key_value_parser)
+                        reply_string += messages.scheduler_parse_string_add.format(key, key_value_database, key_value_parser)
                         self.db.update("url", link, product_key, product_from_parser[product_key])
 
             if product_change_status == False:
@@ -81,9 +91,9 @@ class Helpers:
         for user in users:
             try:
                 if all_products_change_status == False:
-                    self.bot.send_message(user["chat_id"], messages["scheduler_parse_string_no_changes"])
+                    self.bot.send_message(user["chat_id"], messages.scheduler_parse_string_no_changes)
                 else:
-                    self.bot.send_message(user["chat_id"], messages["parse_final"])
+                    self.bot.send_message(user["chat_id"], messages.parse_final)
             except Exception as e:
                 print(f"Error sending message to user {user["chat_id"]}: {e}")
 
@@ -138,6 +148,6 @@ class Helpers:
         products_count = self.db.get_products_count()
         parse_time = self.get_parse_time()
         
-        info_message = messages["info_string"].format(products_count, parse_time)
+        info_message = messages.info_string.format(products_count, parse_time)
 
         self.bot.send_message(message.chat.id, info_message)
